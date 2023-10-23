@@ -7,6 +7,7 @@ using NewsAPI.Constants;
 using MoedaXChange_API.Models;
 using System.Text.Json.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace MoedaXChange_API.Controllers
 {
@@ -17,7 +18,7 @@ namespace MoedaXChange_API.Controllers
         UrlRequests urlRequisition = new UrlRequests();
         ChavesAPI chavesAPI = new ChavesAPI();
        
-        [HttpGet]
+        [HttpPost]
         [Route("Cotacao")]
         public async Task<IActionResult> ObterCotacaoMoeda(string MoedaLocal, string MoedaConversao)
         {
@@ -34,7 +35,14 @@ namespace MoedaXChange_API.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     string jsonResponse = await response.Content.ReadAsStringAsync();
-                    return new JsonResult(jsonResponse);
+
+                    JObject json = JObject.Parse(jsonResponse);
+
+                    JToken result = json[$"{MoedaLocal}{MoedaConversao}"];
+
+                    Cotacao cotacao = JsonConvert.DeserializeObject<Cotacao>(result.ToString());
+
+                    return new JsonResult(cotacao);
                 }
                 else 
                 {
@@ -58,14 +66,14 @@ namespace MoedaXChange_API.Controllers
             try {
                 List<Noticia> noticias = new List<Noticia>();
 
-                fontes.Add("CNN");
+                //fontes.Add("CNN");
 
                 var newsApiClient = new NewsApiClient(chavesAPI.CHAVE_NEWSAPI);
-                var articleResponse = newsApiClient.GetTopHeadlines(new TopHeadlinesRequest { 
-                    //Country = Countries.US,
-                    //Category = Categories.Business,
+                var articleResponse = newsApiClient.GetTopHeadlines(new TopHeadlinesRequest {
+                    Country = Countries.US,
+                    Category = Categories.Business,
                     PageSize = 3,
-                    Sources = fontes
+                    //Sources = fontes  
                 });
 
                 if (articleResponse.Status == Statuses.Ok)
