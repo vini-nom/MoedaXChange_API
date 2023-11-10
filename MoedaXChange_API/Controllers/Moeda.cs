@@ -58,6 +58,49 @@ namespace MoedaXChange_API.Controllers
            
         }
 
+        [HttpPost]
+        [Route("TaxaCambio")]
+        public async Task<IActionResult> ObterTaxaCambio(string MoedaLocal, string MoedaVariada, string DataVariacao) 
+        {
+            try {
+                //CALCULO DE QUANTIDADE DE DIAS
+                DateTime DataAtual = DateTime.Now.Date;
+                DateTime dtVariacao = Convert.ToDateTime(DataVariacao);
+                DateTime dtAtual = Convert.ToDateTime(DataAtual.ToString("yyyy-MM-dd"));
+
+                TimeSpan NumDias = dtAtual - dtVariacao;
+
+                string urlParameters = $"{MoedaVariada}-{MoedaLocal}/{NumDias.Days}";
+                HttpClient client = new HttpClient();
+                client.BaseAddress = new Uri(urlRequisition.URL_TAXA_CAMBIO);
+
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                HttpResponseMessage response = await client.GetAsync(urlParameters);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+
+                    JArray json = JArray.Parse(jsonResponse);
+
+                    JToken result = json;
+
+                    List<Cotacao> cotacao = JsonConvert.DeserializeObject<List<Cotacao>>(result.ToString());
+
+                    return new JsonResult(cotacao);
+                }
+                else
+                {
+                    return new NotFoundResult();
+                }
+            }
+            catch(Exception ex){
+                string msg = Convert.ToString(ex.Message);
+                return new BadRequestObjectResult(msg);
+            }
+        }
+
         [HttpGet]
         [Route("Noticias")]
         public object ObterNoticias() {
